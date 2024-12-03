@@ -2,8 +2,9 @@
 
 ## Description
 
-This project uses Docker Compose to spin up a local Flink cluster for development purposes. It is *not* intended
-for use in production.
+This project uses [Docker Compose](https://docs.docker.com/compose/) to spin up a local [Flink](https://flink.apache.org/) cluster for development purposes.
+
+It is *not* intended for use in production.
 
 ## License
 
