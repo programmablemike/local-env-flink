@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.apache.flink:flink-streaming-java:1.20.0'
+    implementation 'org.apache.flink:flink-clients:1.20.0'
+    testImplementation 'junit:junit:4.13.2'
+}
+
+application {
+    // Main class to run the Flink job
+    mainClass = 'com.example.SquareNumbersJob'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17) // Adjust version if needed
+    }
+}
