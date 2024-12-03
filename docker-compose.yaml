@@ -26,6 +26,10 @@ services:
     command: jobmanager
     environment:
       - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
+    volumes:
+      - jobmanager-checkpoints:/opt/flink/checkpoints
+      - jobmanager-savepoints:/opt/flink/savepoints
+      - jobmanager-ha:/opt/flink/ha
     labels:
       - "traefik.enable=true" # Enable Traefik Proxy for public access
       - "traefik.http.routers.flink-dashboard.rule=Host(`flink.localhost`)" # Route based on hostname
@@ -40,6 +44,8 @@ services:
     command: taskmanager
     environment:
       - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
+    volumes:
+      - taskmanager-state:/opt/flink/state
     depends_on:
       - jobmanager
     labels:
@@ -48,10 +54,10 @@ services:
       - service-network
     
 volumes:
-  jobmanager-storage:
-    driver: local
-  taskmanager-storage:
-    driver: local
+  jobmanager-checkpoints:
+  jobmanager-savepoints:
+  jobmanager-ha:
+  taskmanager-state:
 
 networks:
   service-network:
