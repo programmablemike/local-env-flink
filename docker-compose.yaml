@@ -1,0 +1,58 @@
+services:
+  # reverse-proxy for exposing services publicly
+  traefik-proxy:
+    image: traefik:v3.2.1
+    command:
+      - "--api.insecure=true" # Enable Traefik dashboard for debugging (optional)
+      - "--providers.docker=true" # Enable Docker as the provider
+      - "--entrypoints.web.address=:80" # Define a public HTTP entrypoint
+      #- "--entrypoints.websecure.address=:443" # Define a public HTTPS entrypoint
+    ports:
+      - "80:80" # Public HTTP access
+      #- "443:443" # Public HTTPS access
+    labels:
+      - "traefik.enable=true" # Enable Traefik Proxy dashboard for public access
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)" # Route based on hostname
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080" # Map Traefik Proxy to Traefik dashboard port
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro" # Allow interaction with Docker
+    networks:
+      - service-network
+  
+  # Flink JobManager
+  jobmanager:
+    image: flink:1.20.0-scala_2.12
+    container_name: jobmanager
+    command: jobmanager
+    environment:
+      - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
+    labels:
+      - "traefik.enable=true" # Enable Traefik Proxy for public access
+      - "traefik.http.routers.flink-dashboard.rule=Host(`flink.localhost`)" # Route based on hostname
+      - "traefik.http.services.flink-dashboard.loadbalancer.server.port=8081" # Map Traefik Proxy to Flink Web UI port
+    networks:
+      - service-network
+
+  # Flink TaskManager
+  taskmanager:
+    image: flink:1.20.0-scala_2.12
+    container_name: taskmanager
+    command: taskmanager
+    environment:
+      - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
+    depends_on:
+      - jobmanager
+    labels:
+      - "traefik.enable=false" # Disable Traefik Proxy for internal service
+    networks:
+      - service-network
+    
+volumes:
+  jobmanager-storage:
+    driver: local
+  taskmanager-storage:
+    driver: local
+
+networks:
+  service-network:
+    driver: bridge
