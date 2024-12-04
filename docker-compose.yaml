@@ -24,12 +24,12 @@ services:
     image: flink:1.20.0-scala_2.12-java17
     container_name: jobmanager
     command: jobmanager
-    environment:
-      - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
     volumes:
       - jobmanager-checkpoints:/opt/flink/checkpoints
       - jobmanager-savepoints:/opt/flink/savepoints
       - jobmanager-ha:/opt/flink/ha
+    environment:
+      - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
     labels:
       - "traefik.enable=true" # Enable Traefik Proxy for public access
       - "traefik.http.routers.flink-dashboard.rule=Host(`flink.localhost`)" # Route based on hostname
@@ -42,10 +42,10 @@ services:
     image: flink:1.20.0-scala_2.12-java17
     container_name: taskmanager
     command: taskmanager
-    environment:
-      - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
     volumes:
       - taskmanager-state:/opt/flink/state
+    environment:
+      - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
     depends_on:
       - jobmanager
     labels:
