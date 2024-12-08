@@ -1,0 +1,37 @@
+# Flink configuration file
+# https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/config/
+
+# Task Manager
+taskmanager.numberOfTaskSlots: 1
+taskmanager.memory.flink.size: 1g
+
+# Job Manager
+jobmanager.rpc.address: jobmanager
+jobmanager.execution.failover-strategy: region
+jobmanager.memory.flink.size: 1g
+
+# Fault tolerance
+restart-strategy: off
+
+# Checkpoints and state
+state.backend.type: hashmap
+execution.checkpointing.storage: filesystem
+execution.checkpointing.dir: file:///opt/flink/state/checkpoints
+execution.checkpointing.savepoint-dir: file:///opt/flink/state/savepoints
+execution.checkpointing.incremental: false
+execution.checkpointing.num-retained: 1
+
+# High availability
+high-availability: NONE
+
+# Metrics
+metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+metrics.reporter.prom.port: 9250
+metrics.reporter.prom.interval: 10s
+metrics.fetcher.update-interval: 10s
+
+# Security
+security.ssl.internal.enabled: false
+
+# Java options
+env.java.opts.all: --add-exports=java.base/sun.net.util=ALL-UNNAMED --add-exports=java.rmi/sun.rmi.registry=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
