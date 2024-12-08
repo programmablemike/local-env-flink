@@ -25,15 +25,18 @@ services:
     container_name: jobmanager
     command: jobmanager
     volumes:
-      - jobmanager-checkpoints:/opt/flink/checkpoints
-      - jobmanager-savepoints:/opt/flink/savepoints
+      - ./data/flink/scripts/entrypoint.sh:/docker-entrypoint.sh
+      - ./data/flink/conf/flink-conf.yaml:/mounted/config/flink-conf.yaml:ro
+      - jobmanager-checkpoints:/opt/flink/state/checkpoints
+      - jobmanager-savepoints:/opt/flink/state/savepoints
       - jobmanager-ha:/opt/flink/ha
+    entrypoint: ["/bin/bash", "/docker-entrypoint.sh", "jobmanager"]
     environment:
       - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
     labels:
-      - "traefik.enable=true" # Enable Traefik Proxy for public access
-      - "traefik.http.routers.flink-dashboard.rule=Host(`flink.localhost`)" # Route based on hostname
-      - "traefik.http.services.flink-dashboard.loadbalancer.server.port=8081" # Map Traefik Proxy to Flink Web UI port
+      - "traefik.enable=true" # enable traefik proxy for public access
+      - "traefik.http.routers.flink-dashboard.rule=host(`flink.localhost`)" # route based on hostname
+      - "traefik.http.services.flink-dashboard.loadbalancer.server.port=8081" # map traefik proxy to flink web ui port
     networks:
       - service-network
 
@@ -43,7 +46,10 @@ services:
     container_name: taskmanager
     command: taskmanager
     volumes:
+      - ./data/flink/scripts/entrypoint.sh:/docker-entrypoint.sh
+      - ./data/flink/conf/flink-conf.yaml:/mounted/config/flink-conf.yaml:ro
       - taskmanager-state:/opt/flink/state
+    entrypoint: ["/bin/bash", "/docker-entrypoint.sh", "taskmanager"]
     environment:
       - "FLINK_PROPERTIES=jobmanager.rpc.address: jobmanager"
     depends_on:
@@ -52,6 +58,46 @@ services:
       - "traefik.enable=false" # Disable Traefik Proxy for internal service
     networks:
       - service-network
+  
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./data/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - jobmanager
+      - taskmanager
+    networks:
+      - service-network
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      # Adjust admin credentials as needed
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    # Optional: You can mount provisioning and dashboards to preconfigure Grafana
+    # volumes:
+    #   - ./data/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    #   - ./data/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    labels:
+      - "traefik.enable=true" # enable traefik proxy for public access
+      - "traefik.http.routers.grafana-dashboard.rule=host(`grafana.localhost`)" # route based on hostname
+      - "traefik.http.services.grafana-dashboard.loadbalancer.server.port=3000" # map traefik proxy to flink web ui port
+    networks:
+      - service-network
+
     
 volumes:
   jobmanager-checkpoints:
