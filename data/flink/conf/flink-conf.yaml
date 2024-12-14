@@ -24,11 +24,18 @@ execution.checkpointing.num-retained: 1
 # High availability
 high-availability: NONE
 
-# Metrics
-metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+# Prometheus metrics
+metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
 metrics.reporter.prom.port: 9250
 metrics.reporter.prom.interval: 10s
 metrics.fetcher.update-interval: 10s
+
+# OpenTelemetry metrics
+metrics.reporter.otlp.factory.class: org.apache.flink.metrics.opentelemetry.OtlpMetricReporterFactory
+metrics.reporter.otlp.endpoint: http://otel-collector:4317
+metrics.reporter.otlp.interval: 10s
+metrics.reporter.otlp.exporter.timeout: 3000
+metrics.reporter.otlp.resource.attributes: service.name=flink
 
 # Security
 security.ssl.internal.enabled: false

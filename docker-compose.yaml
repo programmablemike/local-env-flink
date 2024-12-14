@@ -2,6 +2,7 @@ services:
   # reverse-proxy for exposing services publicly
   traefik-proxy:
     image: traefik:v3.2.1
+    container_name: traefik
     command:
       - "--api.insecure=true" # Enable Traefik dashboard for debugging (optional)
       - "--providers.docker=true" # Enable Docker as the provider
@@ -61,40 +62,82 @@ services:
   
   # Prometheus for metrics collection
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.0.1
     container_name: prometheus
     volumes:
       - ./data/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
-    ports:
-      - "9090:9090"
+    #ports:
+    #  - "9090:9090"
     depends_on:
       - jobmanager
       - taskmanager
     networks:
       - service-network
 
+  # OpenTelemetry collector for tracing metrics
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.115.1
+    container_name: otel-collector
+    #ports:
+    #  - "4317:4317" # OTLP gRPC endpoint
+    #  - "8888:8888" # Debugging endpoint
+    #  - "55680:55680" # OTLP HTTP endpoint
+    volumes:
+      - ./data/otel-collector/otel-config.yaml:/etc/otel-collector-config.yaml
+    command: ["--config", "/etc/otel-collector-config.yaml"]
+    depends_on:
+      - loki
+      - tempo
+    networks:
+      - service-network
+
+
   # Grafana for metrics visualization
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     container_name: grafana
     environment:
       # Adjust admin credentials as needed
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     # Optional: You can mount provisioning and dashboards to preconfigure Grafana
-    # volumes:
-    #   - ./data/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    #   - ./data/grafana/provisioning:/etc/grafana/provisioning:ro
-    ports:
-      - "3000:3000"
+    volumes:
+      - ./data/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./data/grafana/provisioning:/etc/grafana/provisioning:ro
+    #ports:
+    #  - "3000:3000"
     depends_on:
       - prometheus
     labels:
       - "traefik.enable=true" # enable traefik proxy for public access
       - "traefik.http.routers.grafana-dashboard.rule=host(`grafana.localhost`)" # route based on hostname
       - "traefik.http.services.grafana-dashboard.loadbalancer.server.port=3000" # map traefik proxy to flink web ui port
+    networks:
+      - service-network
+  
+  # Tempo for tracing visualization
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: tempo
+    volumes:
+      - ./data/tempo/tempo.yaml:/etc/tempo.yaml
+    command: ["/tempo", "--config.file=/etc/tempo.yaml"]
+    #ports:
+    #  - "3200:3200" # Tempo query endpoint
+    networks:
+      - service-network
+
+  
+  loki:
+    image: grafana/loki:3.2.2
+    container_name: loki
+    volumes:
+      - ./data/loki/loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    #ports:
+    #  - "3100:3100"
     networks:
       - service-network
 
