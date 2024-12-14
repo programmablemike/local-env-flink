@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: default # A uniquely identifiable name for the provider
+    orgId: 1 # The unique identifier of the organization
+    folder: "" # The folder where to place the dashboards
+    type: file
+    options:
+      path:
+        /var/lib/grafana/dashboards
+        # Default path for Linux is: /var/lib/grafana/dashboards

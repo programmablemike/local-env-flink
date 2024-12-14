@@ -1,0 +1,62 @@
+receivers:
+  prometheus: # Reads Prometheus metrics from the Flink cluster
+    config:
+      scrape_configs:
+        - job_name: "flink"
+          static_configs:
+            - targets: ["jobmanager:9250"]
+            - targets: ["taskmanager:9250"]
+
+  otlp: # Receives traces and metrics from the Flink cluster
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch: # Groups data into batches for more efficient processing
+  memory_limiter: # Prevents high memory usage
+    limit_mib: 400
+    spike_limit_mib: 100
+    check_interval: 1s
+
+extensions:
+  health_check: # Provides a health check endpoint
+    endpoint: "0.0.0.0:13133"
+
+exporters:
+  prometheus: # Exposes metrics in Prometheus format
+    endpoint: "0.0.0.0:9464"
+    namespace: default
+
+  loki: # Sends logs to Loki
+    endpoint: "http://loki:3100/loki/api/push"
+    #labels:
+    #  service: "flink"
+    #format: "logproto"
+    tls:
+      insecure: true
+
+  otlp/tempo: # Sends traces to Tempo
+    endpoint: "http://tempo:4317"
+    tls:
+      insecure: true
+
+  debug: {} # Debug exporter for diagnostic purposes
+
+service:
+  extensions: [health_check]
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [batch, memory_limiter]
+      exporters: [prometheus]
+
+    traces:
+      receivers: [otlp]
+      processors: [batch, memory_limiter]
+      exporters: [otlp/tempo]
+
+    logs:
+      receivers: [otlp]
+      processors: [batch, memory_limiter]
+      exporters: [loki, debug]
